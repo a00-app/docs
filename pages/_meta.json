@@ -1,0 +1,12 @@
+{
+  "index": "Introduction",
+  "whitepaper": "Whitepaper",
+  "roadmap": "Roadmap",
+  "a00-js": "a00.js",
+  "contact": {
+    "title": "App ↗",
+    "type": "page",
+    "href": "https://a00.app",
+    "newWindow": true
+  }
+}

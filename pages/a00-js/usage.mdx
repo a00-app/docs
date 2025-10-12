@@ -1,0 +1,38 @@
+# Usage
+
+a00.js has 3 main methods. First, you need to initialize the A00 class with the API key.
+
+You can get your API key from [a00.app Settings](https://a00.app/settings).
+
+```typescript
+import { A00 } from "a00.js";
+
+const a00 = new A00("YOUR_API_KEY")
+```
+
+## Uploading files
+
+`upload` method returns the uploaded file's CID.
+
+```typescript
+// Returns a CID, which is needed for deleting & downloading files in future
+const file = await a00.upload("./path/to/file");
+```
+
+## Downloading files
+
+```typescript
+const content = await a00.get(file);
+```
+
+Then you can save the file
+
+```typescript
+fs.writeFileSync(`./${file}.txt`, content);
+```
+
+## Deleting files
+
+```typescript
+a00.delete(file);
+```

@@ -1,0 +1,65 @@
+# a00 — Decentralized Storage
+
+Whitepaper 0.1.0
+
+## Abstract
+
+a00 is a decentralized storage network that couples content‑addressed persistence via IPFS with settlement and incentive alignment on the U2U EVM chain. Its native token, A00, is an ERC‑20 used for onboarding, pricing, and coordination.
+
+## System Model
+
+The system separates data and state. Data is stored and replicated in IPFS, referenced by its content identifier (CID) "h = H(data)", where H is a collision‑resistant hash. Chain state on U2U records token balances, permissions, and contract transitions. Users hold their private keys and directly authorize state changes; the application never takes custody of signing material. We assume a partially synchronous network with BFT‑style finality on U2U and admit adversaries that attempt Sybil attacks at the application edge; economic rate limits are enforced on‑chain.
+
+## Vault Economics and Pricing
+
+The Vault holds custodied A00 and maintains an internal liability ledger B_i(t) for each user i. Storage consumption is measured off‑chain as bytes b_i over a period, and the owner submits these metered values. Let p denote the price in tokens per MiB. With 18‑decimal base units, one MiB corresponds to 2^20 bytes and 10^18 base units per token.
+
+Deduction rule (plain terms):
+- Price per MiB: p
+- Base units per MiB: u = p * 10^18
+- Bytes to MiB: m_i = b_i / 2^20
+- Per‑user deduction: D_i = min(B_i, floor(m_i * u))
+- Balance update: B_i(t+) = B_i(t) − D_i
+
+In the reference implementation p = 1 (one token per MiB), which matches the on‑chain computation D = floor(b * 10^18 / 2^20). The pay() routine aggregates deductions in O(n) over current holders. Because the function does not transfer tokens out, liabilities decrease while tokens remain custodied, enabling later treasury disbursement or provider settlement via an explicit sweep function (an extension point).
+
+Conservation holds at the contract level: the sum of user liabilities plus undistributed revenue equals deposited tokens minus withdrawals. To keep pay() reliably callable as the holder set grows, production deployments should batch over indices or implement pagination to avoid block gas limits. Trust assumptions are explicit: only the owner can post metered usage; future iterations may replace this with verifiable metering proofs.
+
+## Storage Pipeline
+
+Clients transform data into content addresses using H(·) and publish to IPFS. Retrieval uses the CID as the lookup key. Optional client‑side encryption yields c = E_k(data) with metadata linking H(c) to an access policy; the chain stores only minimal coordination signals, never the content itself. This separation decouples data availability from settlement while preserving verifiability and integrity.
+
+## Smart Contracts and Interfaces
+
+- A00 token implements standard ERC‑20 semantics.
+- Faucet contract stores token, amountPerClaim, and cooldown as immutable constructor parameters. Per‑address lastClaimedAt is public. claim() is guarded by ReentrancyGuard, checks cooldown and balance, and transfers amountPerClaim to msg.sender on success. The application reads on‑chain state and prepares unsigned transactions; keys stay client‑side.
+
+### Network Addresses
+
+U2U Nebulas Testnet
+- Faucet: 0x8Cdf68cd62689fa0e2a59b9e29b2f162427DeB57
+- A00: 0xbaf0b03c3447898040182fB205f19E0c8bB93C73
+- Vault: 0x80193060e3B241D678c177f2f1aEEe1ad3449747
+
+U2U Solaris Mainnet
+- A00: 0x2B66bF50d553d23C9185021e73CB20A536eAC908
+- Vault: 0x3C66864bAe5e651096151F5D6fA4509D49B77aC8
+
+## Security and Threat Model
+
+Reentrancy is prevented by explicit guards and the absence of user‑controlled external calls. Balance checks make claims fail atomically if the faucet is depleted. Cooldown is enforced on‑chain per address, providing Sybil resistance at the economic layer. The API surface is non‑custodial by design and cannot bypass contract invariants. On the storage side, content hashing provides end‑to‑end integrity; confidentiality, when required, is achieved through client‑side encryption and out‑of‑band key exchange.
+
+## Tech Stack
+
+- Web app: Next.js 15, Tailwind CSS, TypeScript, React
+- Backend: Node.js, Express
+- Database: MongoDB
+- Smart contracts: Solidity, Hardhat
+
+## Roadmap
+
+Refer to the dedicated roadmap page for a detailed multi‑phase plan.
+
+## Deployment Notes
+
+Contracts are deployed on the U2U EVM chain with addresses configured by environment variables such as FAUCET_CONTRACT and A00. The backend requires an RPC endpoint (RPC_URL) for read‑only access and gas estimation. The web client submits transactions through the user’s wallet interface and must target the same chain as the contracts.
