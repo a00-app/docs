@@ -12,17 +12,30 @@ const a00 = new A00("YOUR_API_KEY")
 
 ## Uploading files
 
-`upload` method returns the uploaded file's CID.
+`upload` method returns the uploaded file's ID, CID, and metadata.
 
 ```typescript
-// Returns a CID, which is needed for deleting & downloading files in future
+// Returns an object, which is needed for deleting & downloading files in future
 const file = await a00.upload("./path/to/file");
+
+/**
+ * @returns {
+ * id: string;
+ *  cid: string;
+ *  metadata: {
+ *      name: string;
+ *      size: number;
+ *      extension: string
+ *  };
+ *  createdAt: Date;
+ * }
+*/
 ```
 
 ## Downloading files
 
 ```typescript
-const content = await a00.get(file);
+const content = await a00.get(file.id);
 ```
 
 Then you can save the file
@@ -33,6 +46,14 @@ fs.writeFileSync(`./${file}.txt`, content);
 
 ## Deleting files
 
+Delete a specific file by its ID.
+
 ```typescript
-a00.delete(file);
+a00.delete(file.id);
+```
+
+Delete all files uploaded by user
+
+```typescript
+a00.deleteAll();
 ```
